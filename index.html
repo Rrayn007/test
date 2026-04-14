@@ -49,66 +49,46 @@
     </div>
 
     <script>
-        // ============================================================
-        // 1. DÁN LINK CSV CỦA BẠN VÀO ĐÂY (Link Publish to web)
-        // ============================================================
-        const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
+    const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
 
-        async function initMusic() {
-            const statusLabel = document.getElementById('status-text');
-            const trackLabel = document.getElementById('track-name');
-            const audioPlayer = document.getElementById('myAudio');
+    async function initMusic() {
+        try {
+            const response = await fetch(sheet_url);
+            const data = await response.text();
+            const rows = data.split('\n');
+            let foundUrl = "";
 
-            try {
-                // Lấy dữ liệu từ Sheets
-                const response = await fetch(sheet_url);
-                const data = await response.text();
-                
-                // Tách dòng
-                const rows = data.split('\n');
-                let foundUrl = "";
-
-                for (let i = 0; i < rows.length; i++) {
-                    // Tách cột (Cột A là index 0, Cột B là index 1)
-                    const cols = rows[i].split(',');
-                    
-                    if (cols[0] && cols[0].trim().replace(/"/g, "") === "audio_bgm") {
-                        // Lấy link ở cột B, xóa khoảng trắng và dấu ngoặc kép
-                        foundUrl = cols[1].trim().replace(/"/g, "");
-                        break;
-                    }
+            for (let i = 0; i < rows.length; i++) {
+                const cols = rows[i].split(',');
+                if (cols[0] && cols[0].trim().replace(/"/g, "") === "audio_bgm") {
+                    foundUrl = cols[1].trim().replace(/"/g, "");
+                    break;
                 }
-
-                if (foundUrl) {
-                    console.log("Tìm thấy link nhạc:", foundUrl);
-                    
-                    // Gán link và tải nhạc
-                    audioPlayer.src = foundUrl;
-                    audioPlayer.load(); 
-                    
-                    trackLabel.innerText = "Sẵn sàng phát nhạc";
-                    statusLabel.innerText = "Đã nhận link từ Google Drive";
-
-                    // Thử tự động phát
-                    const playPromise = audioPlayer.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            statusLabel.innerText = "Vui lòng nhấn Play để nghe nhạc";
-                        });
-                    }
-                } else {
-                    trackLabel.innerText = "Lỗi!";
-                    statusLabel.innerText = "Không tìm thấy khóa 'audio_bgm' trong cột A";
-                }
-
-            } catch (err) {
-                console.error(err);
-                statusLabel.innerText = "Không thể kết nối với Sheets";
             }
-        }
 
-        // Chạy hàm khởi tạo
-        initMusic();
-    </script>
+            if (foundUrl) {
+                const audio = document.getElementById('myAudio');
+                audio.src = foundUrl;
+                
+                // Bắt lỗi trực tiếp từ thẻ Audio
+                audio.onerror = function() {
+                    alert("LỖI: Trình duyệt không thể tải file nhạc. Có thể do link Drive chưa mở quyền chia sẻ (Public).");
+                };
+
+                audio.oncanplaythrough = function() {
+                    console.log("Nhạc đã tải xong và sẵn sàng phát!");
+                };
+
+                audio.load();
+                audio.play().catch(e => console.log("Cần nhấn Play thủ công do chính sách trình duyệt."));
+            } else {
+                alert("LỖI: Không tìm thấy chữ 'audio_bgm' trong cột A của Sheet.");
+            }
+        } catch (err) {
+            alert("LỖI: Không thể đọc được file Sheet. Hãy kiểm tra lại link CSV.");
+        }
+    }
+    initMusic();
+</script>
 </body>
 </html>
