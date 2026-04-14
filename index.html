@@ -13,9 +13,9 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: #1a1a1a; /* Màu tối huyền bí cho 007 */
+            background-color: #1a1a1a; 
             color: #ffffff;
-            cursor: pointer; /* Hiển thị bàn tay để nhắc người dùng click */
+            cursor: pointer;
         }
         .player-card {
             background: #262626;
@@ -26,52 +26,58 @@
             width: 320px;
             border: 1px solid #333;
         }
-        h3 { margin-bottom: 5px; color: #e74c3c; }
+        h3 { margin-bottom: 5px; color: #e74c3c; text-transform: uppercase; letter-spacing: 2px; }
         #track-name { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
         
         audio {
             width: 100%;
-            filter: invert(100%); /* Làm thanh nhạc nổi bật trên nền tối */
+            filter: invert(100%); 
+            opacity: 0.8;
         }
         .status {
             margin-top: 15px;
             font-size: 0.75rem;
             color: #666;
+            min-height: 1.2em;
         }
         .hint {
             margin-top: 20px;
             font-size: 0.8rem;
             color: #f1c40f;
             font-style: italic;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
 
     <div class="player-card">
-        <h3>PROJECT 007</h3>
+        <h3>Project 007</h3>
         <p id="track-name">Đang kết nối dữ liệu...</p>
         
         <audio id="myAudio" controls loop>
             Trình duyệt không hỗ trợ audio.
         </audio>
 
-        <div class="status" id="status-text">Đang tải cấu hình từ Sheets...</div>
-        <p class="hint">Chạm vào màn hình để kích hoạt nhạc nền</p>
+        <div class="status" id="status-text">Đang tải cấu hình...</div>
+        <p class="hint" id="hint-text">Chạm để kích hoạt trải nghiệm</p>
     </div>
 
     <script>
-        // 1. LINK CSV CỦA BẠN (Đã thêm nocache để cập nhật ngay lập tức)
+        // Link CSV từ Google Sheets của bạn
         const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
 
-        async function initMusic() {
-            const statusLabel = document.getElementById('status-text');
-            const trackLabel = document.getElementById('track-name');
-            const audio = document.getElementById('myAudio');
+        const statusLabel = document.getElementById('status-text');
+        const trackLabel = document.getElementById('track-name');
+        const hintLabel = document.getElementById('hint-text');
+        const audio = document.getElementById('myAudio');
 
+        async function initMusic() {
             try {
-                // Thêm timestamp để tránh bị lưu cache cũ từ Google
-                const response = await fetch(sheet_url + "&t=" + new Date().getTime());
+                // Fetch dữ liệu kèm theo nocache timestamp
+                const response = await fetch(`${sheet_url}&t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("Network error");
+                
                 const data = await response.text();
                 const rows = data.split('\n');
                 let foundUrl = "";
@@ -79,9 +85,8 @@
                 for (let i = 0; i < rows.length; i++) {
                     const cols = rows[i].split(',');
                     if (cols[0]) {
-                        // Xử lý chuỗi cực mạnh: xóa mọi khoảng trắng, gạch dưới, viết thường
+                        // Chuẩn hóa Key để tìm audiobgm
                         let key = cols[0].trim().toLowerCase().replace(/\s+/g, '').replace(/_/g, '');
-                        
                         if (key === "audiobgm") {
                             foundUrl = cols[1].trim().replace(/"/g, "");
                             break;
@@ -90,32 +95,35 @@
                 }
 
                 if (foundUrl) {
-                    console.log("Link lấy được:", foundUrl);
                     audio.src = foundUrl;
                     audio.load();
                     
-                    trackLabel.innerText = "Spacewalk - Passengers";
-                    statusLabel.innerText = "Đã sẵn sàng. Chạm để phát!";
+                    trackLabel.innerText = "BGM: Ready to Play"; // Bạn có thể sửa tên bài hát ở đây
+                    statusLabel.innerText = "Dữ liệu đã tải xong.";
 
-                    // QUAN TRỌNG: Kích hoạt nhạc khi người dùng click vào body
+                    // Lắng nghe tương tác đầu tiên để phát nhạc (Thay cho alert)
                     document.body.addEventListener('click', () => {
                         audio.play().then(() => {
                             statusLabel.innerText = "Đang phát nhạc nền...";
+                            hintLabel.style.display = 'none'; // Ẩn dòng nhắc sau khi đã phát
                         }).catch(err => {
-                            console.log("Cần click trực tiếp vào nút Play.");
+                            // Chỉ ghi log, không làm phiền người dùng bằng alert
+                            console.log("Phát nhạc bị chặn bởi trình duyệt, chờ click manual.");
+                            statusLabel.innerText = "Vui lòng nhấn nút Play để nghe nhạc.";
                         });
                     }, { once: true });
 
                 } else {
-                    statusLabel.innerText = "Lỗi: Không tìm thấy key 'audio_bgm'";
+                    statusLabel.innerText = "Không tìm thấy cấu hình 'audio_bgm'";
                 }
 
             } catch (err) {
-                statusLabel.innerText = "Lỗi: Không thể kết nối Sheets.";
+                statusLabel.innerText = "Lỗi kết nối. Vui lòng kiểm tra link Sheet.";
+                console.error(err);
             }
         }
 
-        // Chạy khởi tạo
+        // Khởi tạo hệ thống
         initMusic();
     </script>
 </body>
