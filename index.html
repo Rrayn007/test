@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tải nhạc từ Google Sheets</title>
+</head>
+<body>
+
+    <h2>Trình phát nhạc tự động từ Sheets</h2>
+    
+    <audio id="myAudio" controls autoplay loop>
+        Trình duyệt không hỗ trợ audio.
+    </audio>
+
+    <script>
+        // 1. DÁN LINK CSV CỦA BẠN VÀO ĐÂY
+        const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
+
+        async function loadMusicFromSheet() {
+            try {
+                const response = await fetch(sheet_url);
+                const data = await response.text();
+                
+                // 2. Tách dữ liệu CSV thành các dòng
+                const rows = data.split('\n');
+                
+                let musicUrl = "";
+
+                // 3. Duyệt từng dòng để tìm khóa "audio_bgm"
+                for (let i = 0; i < rows.length; i++) {
+                    const columns = rows[i].split(','); // Chia cột bằng dấu phẩy
+                    
+                    // Nếu cột A (ConfigKey) chứa chữ audio_bgm
+                    if (columns[0].trim() === "audio_bgm") {
+                        musicUrl = columns[1].trim(); // Lấy link ở cột B (ConfigValue)
+                        break;
+                    }
+                }
+
+                // 4. Gán link vào thẻ audio
+                if (musicUrl) {
+                    const audio = document.getElementById('myAudio');
+                    audio.src = musicUrl;
+                    console.log("Đã tìm thấy link nhạc:", musicUrl);
+                } else {
+                    console.error("Không tìm thấy ConfigKey: audio_bgm");
+                }
+
+            } catch (error) {
+                console.error("Lỗi khi đọc Sheet:", error);
+            }
+        }
+
+        loadMusicFromSheet();
+    </script>
+</body>
+</html>
