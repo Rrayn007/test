@@ -2,56 +2,113 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Tải nhạc từ Google Sheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Music Player</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #2c3e50;
+            color: white;
+        }
+        .player-card {
+            background: #34495e;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 350px;
+        }
+        audio {
+            width: 100%;
+            margin-top: 20px;
+            filter: sepia(20%) saturate(70%) grayscale(1) contrast(99%) invert(12%); /* Làm trắng thanh nhạc */
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+        }
+    </style>
 </head>
 <body>
 
-    <h2>Trình phát nhạc tự động từ Sheets</h2>
-    
-    <audio id="myAudio" controls autoplay loop>
-        Trình duyệt không hỗ trợ audio.
-    </audio>
+    <div class="player-card">
+        <h3>Music Background</h3>
+        <p id="track-name">Đang tải cấu hình...</p>
+        
+        <audio id="myAudio" controls loop>
+            Trình duyệt không hỗ trợ audio.
+        </audio>
+
+        <div class="status" id="status-text">Đang kết nối Google Sheets...</div>
+    </div>
 
     <script>
-        // 1. DÁN LINK CSV CỦA BẠN VÀO ĐÂY
+        // ============================================================
+        // 1. DÁN LINK CSV CỦA BẠN VÀO ĐÂY (Link Publish to web)
+        // ============================================================
         const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
 
-        async function loadMusicFromSheet() {
+        async function initMusic() {
+            const statusLabel = document.getElementById('status-text');
+            const trackLabel = document.getElementById('track-name');
+            const audioPlayer = document.getElementById('myAudio');
+
             try {
+                // Lấy dữ liệu từ Sheets
                 const response = await fetch(sheet_url);
                 const data = await response.text();
                 
-                // 2. Tách dữ liệu CSV thành các dòng
+                // Tách dòng
                 const rows = data.split('\n');
-                
-                let musicUrl = "";
+                let foundUrl = "";
 
-                // 3. Duyệt từng dòng để tìm khóa "audio_bgm"
                 for (let i = 0; i < rows.length; i++) {
-                    const columns = rows[i].split(','); // Chia cột bằng dấu phẩy
+                    // Tách cột (Cột A là index 0, Cột B là index 1)
+                    const cols = rows[i].split(',');
                     
-                    // Nếu cột A (ConfigKey) chứa chữ audio_bgm
-                    if (columns[0].trim() === "audio_bgm") {
-                        musicUrl = columns[1].trim(); // Lấy link ở cột B (ConfigValue)
+                    if (cols[0] && cols[0].trim().replace(/"/g, "") === "audio_bgm") {
+                        // Lấy link ở cột B, xóa khoảng trắng và dấu ngoặc kép
+                        foundUrl = cols[1].trim().replace(/"/g, "");
                         break;
                     }
                 }
 
-                // 4. Gán link vào thẻ audio
-                if (musicUrl) {
-                    const audio = document.getElementById('myAudio');
-                    audio.src = musicUrl;
-                    console.log("Đã tìm thấy link nhạc:", musicUrl);
+                if (foundUrl) {
+                    console.log("Tìm thấy link nhạc:", foundUrl);
+                    
+                    // Gán link và tải nhạc
+                    audioPlayer.src = foundUrl;
+                    audioPlayer.load(); 
+                    
+                    trackLabel.innerText = "Sẵn sàng phát nhạc";
+                    statusLabel.innerText = "Đã nhận link từ Google Drive";
+
+                    // Thử tự động phát
+                    const playPromise = audioPlayer.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            statusLabel.innerText = "Vui lòng nhấn Play để nghe nhạc";
+                        });
+                    }
                 } else {
-                    console.error("Không tìm thấy ConfigKey: audio_bgm");
+                    trackLabel.innerText = "Lỗi!";
+                    statusLabel.innerText = "Không tìm thấy khóa 'audio_bgm' trong cột A";
                 }
 
-            } catch (error) {
-                console.error("Lỗi khi đọc Sheet:", error);
+            } catch (err) {
+                console.error(err);
+                statusLabel.innerText = "Không thể kết nối với Sheets";
             }
         }
 
-        loadMusicFromSheet();
+        // Chạy hàm khởi tạo
+        initMusic();
     </script>
 </body>
 </html>
