@@ -3,92 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Music Player</title>
+    <title>Rayn Scofield | Portfolio 007 Music</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #2c3e50;
-            color: white;
+            margin: 0;
+            background-color: #1a1a1a; /* Màu tối huyền bí cho 007 */
+            color: #ffffff;
+            cursor: pointer; /* Hiển thị bàn tay để nhắc người dùng click */
         }
         .player-card {
-            background: #34495e;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #262626;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
             text-align: center;
-            width: 350px;
+            width: 320px;
+            border: 1px solid #333;
         }
+        h3 { margin-bottom: 5px; color: #e74c3c; }
+        #track-name { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
+        
         audio {
             width: 100%;
-            margin-top: 20px;
-            filter: sepia(20%) saturate(70%) grayscale(1) contrast(99%) invert(12%); /* Làm trắng thanh nhạc */
+            filter: invert(100%); /* Làm thanh nhạc nổi bật trên nền tối */
         }
         .status {
-            margin-top: 10px;
+            margin-top: 15px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        .hint {
+            margin-top: 20px;
             font-size: 0.8rem;
-            color: #bdc3c7;
+            color: #f1c40f;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
 
     <div class="player-card">
-        <h3>Music Background</h3>
-        <p id="track-name">Đang tải cấu hình...</p>
+        <h3>PROJECT 007</h3>
+        <p id="track-name">Đang kết nối dữ liệu...</p>
         
         <audio id="myAudio" controls loop>
             Trình duyệt không hỗ trợ audio.
         </audio>
 
-        <div class="status" id="status-text">Đang kết nối Google Sheets...</div>
+        <div class="status" id="status-text">Đang tải cấu hình từ Sheets...</div>
+        <p class="hint">Chạm vào màn hình để kích hoạt nhạc nền</p>
     </div>
 
     <script>
-    const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
+        // 1. LINK CSV CỦA BẠN (Đã thêm nocache để cập nhật ngay lập tức)
+        const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
 
-    async function initMusic() {
-        try {
-            const response = await fetch(sheet_url);
-            const data = await response.text();
-            const rows = data.split('\n');
-            let foundUrl = "";
+        async function initMusic() {
+            const statusLabel = document.getElementById('status-text');
+            const trackLabel = document.getElementById('track-name');
+            const audio = document.getElementById('myAudio');
 
-            for (let i = 0; i < rows.length; i++) {
-                const cols = rows[i].split(',');
-                if (cols[0] && cols[0].trim().replace(/"/g, "") === "audio_bgm") {
-                    foundUrl = cols[1].trim().replace(/"/g, "");
-                    break;
+            try {
+                // Thêm timestamp để tránh bị lưu cache cũ từ Google
+                const response = await fetch(sheet_url + "&t=" + new Date().getTime());
+                const data = await response.text();
+                const rows = data.split('\n');
+                let foundUrl = "";
+
+                for (let i = 0; i < rows.length; i++) {
+                    const cols = rows[i].split(',');
+                    if (cols[0]) {
+                        // Xử lý chuỗi cực mạnh: xóa mọi khoảng trắng, gạch dưới, viết thường
+                        let key = cols[0].trim().toLowerCase().replace(/\s+/g, '').replace(/_/g, '');
+                        
+                        if (key === "audiobgm") {
+                            foundUrl = cols[1].trim().replace(/"/g, "");
+                            break;
+                        }
+                    }
                 }
+
+                if (foundUrl) {
+                    console.log("Link lấy được:", foundUrl);
+                    audio.src = foundUrl;
+                    audio.load();
+                    
+                    trackLabel.innerText = "Spacewalk - Passengers";
+                    statusLabel.innerText = "Đã sẵn sàng. Chạm để phát!";
+
+                    // QUAN TRỌNG: Kích hoạt nhạc khi người dùng click vào body
+                    document.body.addEventListener('click', () => {
+                        audio.play().then(() => {
+                            statusLabel.innerText = "Đang phát nhạc nền...";
+                        }).catch(err => {
+                            console.log("Cần click trực tiếp vào nút Play.");
+                        });
+                    }, { once: true });
+
+                } else {
+                    statusLabel.innerText = "Lỗi: Không tìm thấy key 'audio_bgm'";
+                }
+
+            } catch (err) {
+                statusLabel.innerText = "Lỗi: Không thể kết nối Sheets.";
             }
-
-            if (foundUrl) {
-                const audio = document.getElementById('myAudio');
-                audio.src = foundUrl;
-                
-                // Bắt lỗi trực tiếp từ thẻ Audio
-                audio.onerror = function() {
-                    alert("LỖI: Trình duyệt không thể tải file nhạc. Có thể do link Drive chưa mở quyền chia sẻ (Public).");
-                };
-
-                audio.oncanplaythrough = function() {
-                    console.log("Nhạc đã tải xong và sẵn sàng phát!");
-                };
-
-                audio.load();
-                audio.play().catch(e => console.log("Cần nhấn Play thủ công do chính sách trình duyệt."));
-            } else {
-                alert("LỖI: Không tìm thấy chữ 'audio_bgm' trong cột A của Sheet.");
-            }
-        } catch (err) {
-            alert("LỖI: Không thể đọc được file Sheet. Hãy kiểm tra lại link CSV.");
         }
-    }
-    initMusic();
-</script>
+
+        // Chạy khởi tạo
+        initMusic();
+    </script>
 </body>
 </html>
