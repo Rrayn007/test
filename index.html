@@ -575,18 +575,24 @@ function selectTrack(idx) {
   audio.src = track.audio_url;
   audio.load();
   audio.play().then(() => { isPlaying = true; updatePlayState(); }).catch(console.warn);
-  renderPlayer();
+}
+
+function initAudio() {
+  const track = playlist[0];
+  if (!track?.audio_url) return;
+  audio.src = track.audio_url;
+  audio.load();
 }
 
 function togglePlay() {
-  if (!audio.src && playlist[currentIdx]?.audio_url) {
-    audio.src = playlist[currentIdx].audio_url;
-    audio.load();
+  if (!audio.src || audio.src === window.location.href) {
+    const track = playlist[currentIdx];
+    if (track?.audio_url) { audio.src = track.audio_url; audio.load(); }
   }
   if (audio.paused) {
-    audio.play().then(() => { isPlaying = true; updatePlayState(); }).catch(err => {
-      setStatus('Nhấn Play để bắt đầu.', false);
-    });
+    audio.play()
+      .then(() => { isPlaying = true; updatePlayState(); })
+      .catch(() => setStatus('Nhấn Play để bắt đầu.', false));
   } else {
     audio.pause();
     isPlaying = false;
@@ -700,6 +706,7 @@ async function loadSheet() {
     }];
 
     renderPlayer();
+    initAudio();
     setStatus('BGM đã tải xong', true);
   } catch (err) {
     document.getElementById('appContent').innerHTML = `
