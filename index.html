@@ -686,7 +686,8 @@ async function loadSheet() {
     const fullName = cfg['fullname'] || 'Rayn Scofield';
     const country  = cfg['country'] || '';
 
-    if (!audioUrl || !audioUrl.startsWith('http')) {
+    // Chấp nhận cả link tuyệt đối (http) và đường dẫn tương đối (./file.mp3 hoặc Spacewalk.mp3)
+    if (!audioUrl) {
       throw new Error('Không tìm thấy key "audio_bgm" trong Sheet.');
     }
 
