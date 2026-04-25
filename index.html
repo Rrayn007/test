@@ -494,7 +494,7 @@ function renderPlayer() {
       </div>
 
       <div class="main-controls">
-        <button class="btn-ctrl" id="btnPrev" title="Previous">
+        <button class="btn-ctrl" id="btnPrev" title="Previous" style="visibility:hidden">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -504,7 +504,7 @@ function renderPlayer() {
             <polygon points="5,3 19,12 5,21"/>
           </svg>
         </button>
-        <button class="btn-ctrl" id="btnNext" title="Next">
+        <button class="btn-ctrl" id="btnNext" title="Next" style="visibility:hidden">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -520,7 +520,7 @@ function renderPlayer() {
       </div>
     </div>
 
-    <div class="playlist-wrap">
+    <div id="playlistWrap" style="display:none">
       <div class="playlist-label">Playlist</div>
       <div id="trackList"></div>
     </div>
@@ -645,7 +645,8 @@ audio.addEventListener('timeupdate', () => {
 });
 
 audio.addEventListener('ended', () => {
-  selectTrack((currentIdx+1) % playlist.length);
+  audio.currentTime = 0;
+  audio.play().catch(console.warn);
 });
 
 audio.addEventListener('error', () => {
@@ -653,33 +654,52 @@ audio.addEventListener('error', () => {
   isPlaying = false; updatePlayState();
 });
 
-// ---- Fetch & parse Sheet
+// ---- Parse ConfigKey / ConfigValue format
+// Sheet columns: ConfigKey | ConfigValue | ... (any extra columns ignored)
+// Reads ALL rows, builds a map: { configkey_normalized: value }
+function parseKeyValue(csv) {
+  const rows = parseCSV(csv);
+  const map = {};
+  for (const row of rows) {
+    // Find the ConfigKey column (first column header containing 'key' or 'config')
+    const keyCol = Object.keys(row).find(k => k.includes('key') || k.includes('config')) || Object.keys(row)[0];
+    const valCol = Object.keys(row).find(k => k.includes('value') || k.includes('val')) || Object.keys(row)[1];
+    const k = (row[keyCol] || '').trim().toLowerCase().replace(/\s+/g,'').replace(/_/g,'');
+    const v = (row[valCol] || '').trim().replace(/^"|"$/g,'');
+    if (k) map[k] = v;
+  }
+  return map;
+}
+
+// ---- Fetch & parse Sheet (key-value mode)
 async function loadSheet() {
   document.getElementById('appContent').innerHTML = '<div class="loading-msg">Đang tải dữ liệu từ Sheet…</div>';
   try {
     const res = await fetch(`${SHEET_CSV_URL}&t=${Date.now()}`);
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
-    const rows = parseCSV(csv);
+    const cfg = parseKeyValue(csv);
 
-    // Tìm các cột cần thiết (linh hoạt với tên cột)
-    // Expected columns: title, artist, audio_url, cover_url, duration
-    // Also support: track_name, name, audio, bgm, image, cover, image_url
-    playlist = rows.filter(r => {
-      const url = r.audio_url || r.audio || r.bgm || r.url || '';
-      return url && url.startsWith('http');
-    }).map(r => ({
-      title:     r.title || r.track_name || r.name || 'Untitled',
-      artist:    r.artist || r.author || '',
-      audio_url: r.audio_url || r.audio || r.bgm || r.url || '',
-      cover_url: r.cover_url || r.image_url || r.image || r.cover || '',
-      duration:  r.duration || '',
-    }));
+    // Tìm audio_bgm (normalize: audiobgm)
+    const audioUrl = cfg['audiobgm'] || cfg['audiobgm1'] || cfg['audio'] || '';
+    const coverUrl = cfg['sitelogo'] || cfg['cover'] || cfg['coverurl'] || cfg['tradingcard1'] || '';
+    const fullName = cfg['fullname'] || 'Rayn Scofield';
+    const country  = cfg['country'] || '';
 
-    if (playlist.length === 0) throw new Error('Không tìm thấy track nào. Kiểm tra tên cột trong Sheet.');
+    if (!audioUrl || !audioUrl.startsWith('http')) {
+      throw new Error('Không tìm thấy key "audio_bgm" trong Sheet.');
+    }
+
+    // Build single-track playlist
+    playlist = [{
+      title:     'BGM',
+      artist:    fullName + (country ? ' · ' + country : ''),
+      audio_url: audioUrl,
+      cover_url: coverUrl,
+    }];
 
     renderPlayer();
-    setStatus(`${playlist.length} tracks đã tải`, true);
+    setStatus('BGM đã tải xong', true);
   } catch (err) {
     document.getElementById('appContent').innerHTML = `
       <div class="error-msg">
