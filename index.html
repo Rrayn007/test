@@ -269,7 +269,6 @@
 
     .track-item:last-child { border-bottom: none; }
     .track-item:hover { color: var(--accent); }
-
     .track-item.active { color: var(--accent); }
 
     .track-idx {
@@ -385,23 +384,6 @@
     @keyframes eq2 { 0%,100%{height:8px} 50%{height:4px} }
     @keyframes eq3 { 0%,100%{height:5px} 50%{height:14px} }
     @keyframes eq4 { 0%,100%{height:10px} 50%{height:3px} }
-
-    .loading-msg {
-      text-align: center;
-      padding: 2rem;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: 1px;
-    }
-
-    .error-msg {
-      text-align: center;
-      padding: 2rem;
-      color: var(--red);
-      font-family: var(--mono);
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
@@ -411,63 +393,43 @@
 
   <div class="player-card" id="playerCard">
     <div id="appContent">
-      <div class="loading-msg">Đang kết nối dữ liệu…</div>
-    </div>
+      </div>
   </div>
 </div>
 
 <audio id="audioEl" preload="none"></audio>
 
 <script>
-// ============================================================
-//  CẤU HÌNH — chỉ cần thay đổi dòng này
-// ============================================================
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
-// ============================================================
-
 const audio = document.getElementById('audioEl');
 let playlist = [];
 let currentIdx = 0;
 let isPlaying = false;
-let eqEl = null;
 
-// ---- Parse CSV đơn giản (xử lý field có dấu phẩy trong ngoặc kép)
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = splitCSVRow(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g,'_'));
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = splitCSVRow(lines[i]);
-    if (vals.every(v => !v.trim())) continue;
-    const obj = {};
-    headers.forEach((h, j) => { obj[h] = (vals[j] || '').trim().replace(/^"|"$/g,''); });
-    rows.push(obj);
-  }
-  return rows;
+// 1. Gắn cứng dữ liệu nhạc và link Raw từ GitHub của bạn
+function initPlayer() {
+  playlist = [{
+    title: 'Spacewalk',
+    artist: 'Rayn Scofield',
+    // CHÚ Ý: Đây là link Raw xịn từ kho lưu trữ của bạn
+    audio_url: 'https://github.com/Rrayn007/test/raw/refs/heads/main/ShedALight.flac', 
+    cover_url: '', // Nếu có link ảnh bìa, dán vào đây
+  }];
+
+  renderPlayer();
+  initAudio();
+  setStatus('BGM đã tải xong', true);
 }
 
-function splitCSVRow(row) {
-  const result = [];
-  let cur = '', inQ = false;
-  for (const ch of row) {
-    if (ch === '"') { inQ = !inQ; }
-    else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
-    else cur += ch;
-  }
-  result.push(cur);
-  return result;
-}
-
-// ---- Render UI principal
+// 2. Render giao diện
 function renderPlayer() {
   const track = playlist[currentIdx] || {};
-  const coverUrl = track.cover_url || track.image_url || track.cover || '';
+  const coverUrl = track.cover_url || '';
   const appContent = document.getElementById('appContent');
 
   appContent.innerHTML = `
     <div class="cover-wrap" id="coverWrap">
       ${coverUrl
-        ? `<img class="cover-art" id="coverImg" src="${coverUrl}" alt="${track.title||'Cover'}" loading="lazy" />`
+        ? `<img class="cover-art" id="coverImg" src="${coverUrl}" alt="${track.title}" loading="lazy" />`
         : `<div class="cover-placeholder">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
               <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
@@ -477,8 +439,8 @@ function renderPlayer() {
            </div>`
       }
       <div class="cover-overlay">
-        <div class="track-number">Track ${String(currentIdx+1).padStart(2,'0')} / ${String(playlist.length).padStart(2,'0')}</div>
-        <div class="track-title" id="trackTitle">${track.title || 'Untitled'}</div>
+        <div class="track-number">Track 01 / 01</div>
+        <div class="track-title" id="trackTitle">${track.title}</div>
       </div>
     </div>
 
@@ -494,19 +456,9 @@ function renderPlayer() {
       </div>
 
       <div class="main-controls">
-        <button class="btn-ctrl" id="btnPrev" title="Previous" style="visibility:hidden">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
         <button class="btn-play" id="btnPlay">
           <svg id="playIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5,3 19,12 5,21"/>
-          </svg>
-        </button>
-        <button class="btn-ctrl" id="btnNext" title="Next" style="visibility:hidden">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -520,61 +472,23 @@ function renderPlayer() {
       </div>
     </div>
 
-    <div id="playlistWrap" style="display:none">
-      <div class="playlist-label">Playlist</div>
-      <div id="trackList"></div>
-    </div>
-
     <div class="status-bar">
       <span><span class="status-dot ok" id="statusDot"></span><span id="statusText">Sẵn sàng</span></span>
       <div class="eq-bars" id="eqBars">
-        <div class="eq-bar"></div>
-        <div class="eq-bar"></div>
-        <div class="eq-bar"></div>
-        <div class="eq-bar"></div>
+        <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
       </div>
     </div>
   `;
 
-  renderTrackList();
   bindControls();
   updateCoverState();
 }
 
-function renderTrackList() {
-  const list = document.getElementById('trackList');
-  if (!list) return;
-  list.innerHTML = playlist.map((t, i) => `
-    <div class="track-item ${i===currentIdx?'active':''}" data-idx="${i}">
-      <span class="track-idx">${String(i+1).padStart(2,'0')}</span>
-      <div class="track-info">
-        <div class="track-name">${t.title || 'Untitled'}</div>
-        <div class="track-meta">${t.artist || ''}</div>
-      </div>
-      <span class="track-dur">${t.duration || ''}</span>
-    </div>
-  `).join('');
-  list.querySelectorAll('.track-item').forEach(el => {
-    el.addEventListener('click', () => selectTrack(parseInt(el.dataset.idx)));
-  });
-}
-
 function bindControls() {
   document.getElementById('btnPlay')?.addEventListener('click', togglePlay);
-  document.getElementById('btnPrev')?.addEventListener('click', () => selectTrack((currentIdx-1+playlist.length)%playlist.length));
-  document.getElementById('btnNext')?.addEventListener('click', () => selectTrack((currentIdx+1)%playlist.length));
   document.getElementById('progressBar')?.addEventListener('click', seekAudio);
   document.getElementById('volSlider')?.addEventListener('input', e => { audio.volume = e.target.value/100; });
   audio.volume = 0.8;
-}
-
-function selectTrack(idx) {
-  currentIdx = idx;
-  const track = playlist[idx];
-  if (!track?.audio_url) return;
-  audio.src = track.audio_url;
-  audio.load();
-  audio.play().then(() => { isPlaying = true; updatePlayState(); }).catch(console.warn);
 }
 
 function initAudio() {
@@ -585,14 +499,11 @@ function initAudio() {
 }
 
 function togglePlay() {
-  if (!audio.src || audio.src === window.location.href) {
-    const track = playlist[currentIdx];
-    if (track?.audio_url) { audio.src = track.audio_url; audio.load(); }
-  }
   if (audio.paused) {
-    audio.play()
-      .then(() => { isPlaying = true; updatePlayState(); })
-      .catch(() => setStatus('Nhấn Play để bắt đầu.', false));
+    audio.play().then(() => { 
+      isPlaying = true; 
+      updatePlayState(); 
+    }).catch(() => setStatus('Lỗi phát nhạc.', false));
   } else {
     audio.pause();
     isPlaying = false;
@@ -602,20 +513,16 @@ function togglePlay() {
 
 function updatePlayState() {
   const icon = document.getElementById('playIcon');
-  const coverImg = document.getElementById('coverImg');
   const eqBars = document.getElementById('eqBars');
   if (icon) {
     icon.innerHTML = isPlaying
       ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
       : '<polygon points="5,3 19,12 5,21"/>';
   }
-  if (coverImg) coverImg.classList.toggle('playing', isPlaying);
   if (eqBars) eqBars.classList.toggle('playing', isPlaying);
 }
 
 function updateCoverState() {
-  const coverImg = document.getElementById('coverImg');
-  if (coverImg) coverImg.classList.toggle('playing', isPlaying);
   const eqBars = document.getElementById('eqBars');
   if (eqBars) eqBars.classList.toggle('playing', isPlaying);
 }
@@ -631,7 +538,7 @@ function setStatus(msg, ok=true) {
   const el = document.getElementById('statusText');
   const dot = document.getElementById('statusDot');
   if (el) el.textContent = msg;
-  if (dot) { dot.className = 'status-dot ' + (ok?'ok':'err'); }
+  if (dot) dot.className = 'status-dot ' + (ok ? 'ok' : 'err');
 }
 
 function fmtTime(s) {
@@ -640,7 +547,7 @@ function fmtTime(s) {
   return `${m}:${String(sec).padStart(2,'0')}`;
 }
 
-// Audio events
+// Xử lý sự kiện Audio
 audio.addEventListener('timeupdate', () => {
   const fill = document.getElementById('progressFill');
   const cur = document.getElementById('timeCur');
@@ -660,65 +567,8 @@ audio.addEventListener('error', () => {
   isPlaying = false; updatePlayState();
 });
 
-// ---- Parse ConfigKey / ConfigValue format
-// Sheet columns: ConfigKey | ConfigValue | ... (any extra columns ignored)
-// Reads ALL rows, builds a map: { configkey_normalized: value }
-function parseKeyValue(csv) {
-  const rows = parseCSV(csv);
-  const map = {};
-  for (const row of rows) {
-    // Find the ConfigKey column (first column header containing 'key' or 'config')
-    const keyCol = Object.keys(row).find(k => k.includes('key') || k.includes('config')) || Object.keys(row)[0];
-    const valCol = Object.keys(row).find(k => k.includes('value') || k.includes('val')) || Object.keys(row)[1];
-    const k = (row[keyCol] || '').trim().toLowerCase().replace(/\s+/g,'').replace(/_/g,'');
-    const v = (row[valCol] || '').trim().replace(/^"|"$/g,'');
-    if (k) map[k] = v;
-  }
-  return map;
-}
-
-// ---- Fetch & parse Sheet (key-value mode)
-async function loadSheet() {
-  document.getElementById('appContent').innerHTML = '<div class="loading-msg">Đang tải dữ liệu từ Sheet…</div>';
-  try {
-    const res = await fetch(`${SHEET_CSV_URL}&t=${Date.now()}`);
-    if (!res.ok) throw new Error('Network error');
-    const csv = await res.text();
-    const cfg = parseKeyValue(csv);
-
-    // Tìm audio_bgm (normalize: audiobgm)
-    const audioUrl = cfg['audiobgm'] || cfg['audiobgm1'] || cfg['audio'] || '';
-    const coverUrl = cfg['sitelogo'] || cfg['cover'] || cfg['coverurl'] || cfg['tradingcard1'] || '';
-    const fullName = cfg['fullname'] || 'Rayn Scofield';
-    const country  = cfg['country'] || '';
-
-    // Chấp nhận cả link tuyệt đối (http) và đường dẫn tương đối (./file.mp3 hoặc Spacewalk.mp3)
-    if (!audioUrl) {
-      throw new Error('Không tìm thấy key "audio_bgm" trong Sheet.');
-    }
-
-    // Build single-track playlist
-    playlist = [{
-      title:     'BGM',
-      artist:    fullName + (country ? ' · ' + country : ''),
-      audio_url: audioUrl,
-      cover_url: coverUrl,
-    }];
-
-    renderPlayer();
-    initAudio();
-    setStatus('BGM đã tải xong', true);
-  } catch (err) {
-    document.getElementById('appContent').innerHTML = `
-      <div class="error-msg">
-        Lỗi: ${err.message}<br><br>
-        <small style="color:#555">Kiểm tra URL Sheet và quyền "Publish to web"</small>
-      </div>`;
-    console.error(err);
-  }
-}
-
-loadSheet();
+// Khởi động Player
+initPlayer();
 </script>
 </body>
 </html>
