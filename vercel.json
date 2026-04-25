@@ -1,0 +1,22 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/proxy/github/:path*",
+      "destination": "https://raw.githubusercontent.com/:path*"
+    },
+    {
+      "source": "/proxy/drive/:id",
+      "destination": "https://drive.google.com/uc?export=download&id=:id"
+    }
+  ]
+}
