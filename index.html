@@ -1,130 +1,696 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rayn Scofield | Portfolio 007 Music</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #1a1a1a; 
-            color: #ffffff;
-            cursor: pointer;
-        }
-        .player-card {
-            background: #262626;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
-            text-align: center;
-            width: 320px;
-            border: 1px solid #333;
-        }
-        h3 { margin-bottom: 5px; color: #e74c3c; text-transform: uppercase; letter-spacing: 2px; }
-        #track-name { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
-        
-        audio {
-            width: 100%;
-            filter: invert(100%); 
-            opacity: 0.8;
-        }
-        .status {
-            margin-top: 15px;
-            font-size: 0.75rem;
-            color: #666;
-            min-height: 1.2em;
-        }
-        .hint {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #f1c40f;
-            font-style: italic;
-            opacity: 0.7;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rayn Scofield · Project 007</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black: #0a0a0a;
+      --surface: #111111;
+      --card: #181818;
+      --border: #2a2a2a;
+      --accent: #c8a96e;
+      --accent-dim: #8a7048;
+      --red: #c0392b;
+      --text: #e8e4dc;
+      --muted: #666;
+      --mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(200,169,110,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,169,110,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    /* Header badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Main card */
+    .player-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    /* Cover art area */
+    .cover-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .cover-art {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s ease, filter 0.6s ease;
+      filter: brightness(0.85);
+    }
+
+    .cover-art.playing {
+      transform: scale(1.02);
+      filter: brightness(1);
+    }
+
+    .cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .cover-placeholder svg {
+      opacity: 0.3;
+    }
+
+    /* Track overlay on cover */
+    .cover-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2rem 1.5rem 1rem;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    }
+
+    .track-number {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .track-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      line-height: 1;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* Controls section */
+    .controls-section {
+      padding: 1.5rem;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-bottom: 1.5rem;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s linear;
+    }
+
+    /* Main controls */
+    .main-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-ctrl {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      transition: color 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+
+    .btn-ctrl:hover { color: var(--text); }
+    .btn-ctrl:active { transform: scale(0.92); }
+
+    .btn-play {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--black);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-play:hover { background: #dfc07e; }
+    .btn-play:active { transform: scale(0.95); }
+
+    /* Playlist */
+    .playlist-wrap {
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .playlist-wrap::-webkit-scrollbar { width: 3px; }
+    .playlist-wrap::-webkit-scrollbar-track { background: transparent; }
+    .playlist-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .playlist-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .track-item:last-child { border-bottom: none; }
+    .track-item:hover { color: var(--accent); }
+
+    .track-item.active { color: var(--accent); }
+
+    .track-idx {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 20px;
+      text-align: right;
+    }
+
+    .track-item.active .track-idx { color: var(--accent); }
+
+    .track-info { flex: 1; min-width: 0; }
+
+    .track-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .track-dur {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Volume */
+    .vol-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 0.5rem;
+    }
+
+    .vol-row svg { color: var(--muted); flex-shrink: 0; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Status bar */
+    .status-bar {
+      padding: 8px 1.5rem;
+      background: rgba(200,169,110,0.04);
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .status-dot.ok { background: #27ae60; }
+    .status-dot.err { background: var(--red); }
+
+    /* Eq bars animation */
+    .eq-bars {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 14px;
+    }
+
+    .eq-bar {
+      width: 3px;
+      background: var(--accent);
+      border-radius: 1px;
+      animation: none;
+      height: 3px;
+      transition: height 0.2s;
+    }
+
+    .playing .eq-bar:nth-child(1) { animation: eq1 0.8s infinite; }
+    .playing .eq-bar:nth-child(2) { animation: eq2 0.9s infinite 0.1s; }
+    .playing .eq-bar:nth-child(3) { animation: eq3 0.7s infinite 0.2s; }
+    .playing .eq-bar:nth-child(4) { animation: eq4 1s infinite 0.05s; }
+
+    @keyframes eq1 { 0%,100%{height:3px} 50%{height:12px} }
+    @keyframes eq2 { 0%,100%{height:8px} 50%{height:4px} }
+    @keyframes eq3 { 0%,100%{height:5px} 50%{height:14px} }
+    @keyframes eq4 { 0%,100%{height:10px} 50%{height:3px} }
+
+    .loading-msg {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 2rem;
+      color: var(--red);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="player-card">
-        <h3>Project 007</h3>
-        <p id="track-name">Đang kết nối dữ liệu...</p>
-        
-        <audio id="myAudio" controls loop>
-            Trình duyệt không hỗ trợ audio.
-        </audio>
+<div class="container">
+  <div class="badge">Project 007 · Portfolio</div>
 
-        <div class="status" id="status-text">Đang tải cấu hình...</div>
-        <p class="hint" id="hint-text">Chạm để kích hoạt trải nghiệm</p>
+  <div class="player-card" id="playerCard">
+    <div id="appContent">
+      <div class="loading-msg">Đang kết nối dữ liệu…</div>
+    </div>
+  </div>
+</div>
+
+<audio id="audioEl" preload="none"></audio>
+
+<script>
+// ============================================================
+//  CẤU HÌNH — chỉ cần thay đổi dòng này
+// ============================================================
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
+// ============================================================
+
+const audio = document.getElementById('audioEl');
+let playlist = [];
+let currentIdx = 0;
+let isPlaying = false;
+let eqEl = null;
+
+// ---- Parse CSV đơn giản (xử lý field có dấu phẩy trong ngoặc kép)
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = splitCSVRow(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g,'_'));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = splitCSVRow(lines[i]);
+    if (vals.every(v => !v.trim())) continue;
+    const obj = {};
+    headers.forEach((h, j) => { obj[h] = (vals[j] || '').trim().replace(/^"|"$/g,''); });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function splitCSVRow(row) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (const ch of row) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ---- Render UI principal
+function renderPlayer() {
+  const track = playlist[currentIdx] || {};
+  const coverUrl = track.cover_url || track.image_url || track.cover || '';
+  const appContent = document.getElementById('appContent');
+
+  appContent.innerHTML = `
+    <div class="cover-wrap" id="coverWrap">
+      ${coverUrl
+        ? `<img class="cover-art" id="coverImg" src="${coverUrl}" alt="${track.title||'Cover'}" loading="lazy" />`
+        : `<div class="cover-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+              <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>
+           </div>`
+      }
+      <div class="cover-overlay">
+        <div class="track-number">Track ${String(currentIdx+1).padStart(2,'0')} / ${String(playlist.length).padStart(2,'0')}</div>
+        <div class="track-title" id="trackTitle">${track.title || 'Untitled'}</div>
+      </div>
     </div>
 
-    <script>
-        // Link CSV từ Google Sheets của bạn
-        const sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzfUCbZ2r6kXI5fSqKov3aJRngpXzCRlhTeW3B8A1whJHLEXjqGDGlrgt-3DC74ZTYxatDqB35eAwP/pub?output=csv";
+    <div class="controls-section">
+      <div class="progress-wrap">
+        <div class="time-row">
+          <span id="timeCur">0:00</span>
+          <span id="timeDur">--:--</span>
+        </div>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
 
-        const statusLabel = document.getElementById('status-text');
-        const trackLabel = document.getElementById('track-name');
-        const hintLabel = document.getElementById('hint-text');
-        const audio = document.getElementById('myAudio');
+      <div class="main-controls">
+        <button class="btn-ctrl" id="btnPrev" title="Previous">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="btn-play" id="btnPlay">
+          <svg id="playIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </button>
+        <button class="btn-ctrl" id="btnNext" title="Next">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
 
-        async function initMusic() {
-            try {
-                // Fetch dữ liệu kèm theo nocache timestamp
-                const response = await fetch(`${sheet_url}&t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error("Network error");
-                
-                const data = await response.text();
-                const rows = data.split('\n');
-                let foundUrl = "";
+      <div class="vol-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <input type="range" id="volSlider" min="0" max="100" value="80" />
+      </div>
+    </div>
 
-                for (let i = 0; i < rows.length; i++) {
-                    const cols = rows[i].split(',');
-                    if (cols[0]) {
-                        // Chuẩn hóa Key để tìm audiobgm
-                        let key = cols[0].trim().toLowerCase().replace(/\s+/g, '').replace(/_/g, '');
-                        if (key === "audiobgm") {
-                            foundUrl = cols[1].trim().replace(/"/g, "");
-                            break;
-                        }
-                    }
-                }
+    <div class="playlist-wrap">
+      <div class="playlist-label">Playlist</div>
+      <div id="trackList"></div>
+    </div>
 
-                if (foundUrl) {
-                    audio.src = foundUrl;
-                    audio.load();
-                    
-                    trackLabel.innerText = "BGM: Ready to Play"; // Bạn có thể sửa tên bài hát ở đây
-                    statusLabel.innerText = "Dữ liệu đã tải xong.";
+    <div class="status-bar">
+      <span><span class="status-dot ok" id="statusDot"></span><span id="statusText">Sẵn sàng</span></span>
+      <div class="eq-bars" id="eqBars">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+    </div>
+  `;
 
-                    // Lắng nghe tương tác đầu tiên để phát nhạc (Thay cho alert)
-                    document.body.addEventListener('click', () => {
-                        audio.play().then(() => {
-                            statusLabel.innerText = "Đang phát nhạc nền...";
-                            hintLabel.style.display = 'none'; // Ẩn dòng nhắc sau khi đã phát
-                        }).catch(err => {
-                            // Chỉ ghi log, không làm phiền người dùng bằng alert
-                            console.log("Phát nhạc bị chặn bởi trình duyệt, chờ click manual.");
-                            statusLabel.innerText = "Vui lòng nhấn nút Play để nghe nhạc.";
-                        });
-                    }, { once: true });
+  renderTrackList();
+  bindControls();
+  updateCoverState();
+}
 
-                } else {
-                    statusLabel.innerText = "Không tìm thấy cấu hình 'audio_bgm'";
-                }
+function renderTrackList() {
+  const list = document.getElementById('trackList');
+  if (!list) return;
+  list.innerHTML = playlist.map((t, i) => `
+    <div class="track-item ${i===currentIdx?'active':''}" data-idx="${i}">
+      <span class="track-idx">${String(i+1).padStart(2,'0')}</span>
+      <div class="track-info">
+        <div class="track-name">${t.title || 'Untitled'}</div>
+        <div class="track-meta">${t.artist || ''}</div>
+      </div>
+      <span class="track-dur">${t.duration || ''}</span>
+    </div>
+  `).join('');
+  list.querySelectorAll('.track-item').forEach(el => {
+    el.addEventListener('click', () => selectTrack(parseInt(el.dataset.idx)));
+  });
+}
 
-            } catch (err) {
-                statusLabel.innerText = "Lỗi kết nối. Vui lòng kiểm tra link Sheet.";
-                console.error(err);
-            }
-        }
+function bindControls() {
+  document.getElementById('btnPlay')?.addEventListener('click', togglePlay);
+  document.getElementById('btnPrev')?.addEventListener('click', () => selectTrack((currentIdx-1+playlist.length)%playlist.length));
+  document.getElementById('btnNext')?.addEventListener('click', () => selectTrack((currentIdx+1)%playlist.length));
+  document.getElementById('progressBar')?.addEventListener('click', seekAudio);
+  document.getElementById('volSlider')?.addEventListener('input', e => { audio.volume = e.target.value/100; });
+  audio.volume = 0.8;
+}
 
-        // Khởi tạo hệ thống
-        initMusic();
-    </script>
+function selectTrack(idx) {
+  currentIdx = idx;
+  const track = playlist[idx];
+  if (!track?.audio_url) return;
+  audio.src = track.audio_url;
+  audio.load();
+  audio.play().then(() => { isPlaying = true; updatePlayState(); }).catch(console.warn);
+  renderPlayer();
+}
+
+function togglePlay() {
+  if (!audio.src && playlist[currentIdx]?.audio_url) {
+    audio.src = playlist[currentIdx].audio_url;
+    audio.load();
+  }
+  if (audio.paused) {
+    audio.play().then(() => { isPlaying = true; updatePlayState(); }).catch(err => {
+      setStatus('Nhấn Play để bắt đầu.', false);
+    });
+  } else {
+    audio.pause();
+    isPlaying = false;
+    updatePlayState();
+  }
+}
+
+function updatePlayState() {
+  const icon = document.getElementById('playIcon');
+  const coverImg = document.getElementById('coverImg');
+  const eqBars = document.getElementById('eqBars');
+  if (icon) {
+    icon.innerHTML = isPlaying
+      ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
+      : '<polygon points="5,3 19,12 5,21"/>';
+  }
+  if (coverImg) coverImg.classList.toggle('playing', isPlaying);
+  if (eqBars) eqBars.classList.toggle('playing', isPlaying);
+}
+
+function updateCoverState() {
+  const coverImg = document.getElementById('coverImg');
+  if (coverImg) coverImg.classList.toggle('playing', isPlaying);
+  const eqBars = document.getElementById('eqBars');
+  if (eqBars) eqBars.classList.toggle('playing', isPlaying);
+}
+
+function seekAudio(e) {
+  if (!audio.duration) return;
+  const bar = e.currentTarget;
+  const ratio = e.offsetX / bar.offsetWidth;
+  audio.currentTime = ratio * audio.duration;
+}
+
+function setStatus(msg, ok=true) {
+  const el = document.getElementById('statusText');
+  const dot = document.getElementById('statusDot');
+  if (el) el.textContent = msg;
+  if (dot) { dot.className = 'status-dot ' + (ok?'ok':'err'); }
+}
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '--:--';
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+// Audio events
+audio.addEventListener('timeupdate', () => {
+  const fill = document.getElementById('progressFill');
+  const cur = document.getElementById('timeCur');
+  const dur = document.getElementById('timeDur');
+  if (fill && audio.duration) fill.style.width = (audio.currentTime/audio.duration*100)+'%';
+  if (cur) cur.textContent = fmtTime(audio.currentTime);
+  if (dur) dur.textContent = fmtTime(audio.duration);
+});
+
+audio.addEventListener('ended', () => {
+  selectTrack((currentIdx+1) % playlist.length);
+});
+
+audio.addEventListener('error', () => {
+  setStatus('Lỗi phát audio.', false);
+  isPlaying = false; updatePlayState();
+});
+
+// ---- Fetch & parse Sheet
+async function loadSheet() {
+  document.getElementById('appContent').innerHTML = '<div class="loading-msg">Đang tải dữ liệu từ Sheet…</div>';
+  try {
+    const res = await fetch(`${SHEET_CSV_URL}&t=${Date.now()}`);
+    if (!res.ok) throw new Error('Network error');
+    const csv = await res.text();
+    const rows = parseCSV(csv);
+
+    // Tìm các cột cần thiết (linh hoạt với tên cột)
+    // Expected columns: title, artist, audio_url, cover_url, duration
+    // Also support: track_name, name, audio, bgm, image, cover, image_url
+    playlist = rows.filter(r => {
+      const url = r.audio_url || r.audio || r.bgm || r.url || '';
+      return url && url.startsWith('http');
+    }).map(r => ({
+      title:     r.title || r.track_name || r.name || 'Untitled',
+      artist:    r.artist || r.author || '',
+      audio_url: r.audio_url || r.audio || r.bgm || r.url || '',
+      cover_url: r.cover_url || r.image_url || r.image || r.cover || '',
+      duration:  r.duration || '',
+    }));
+
+    if (playlist.length === 0) throw new Error('Không tìm thấy track nào. Kiểm tra tên cột trong Sheet.');
+
+    renderPlayer();
+    setStatus(`${playlist.length} tracks đã tải`, true);
+  } catch (err) {
+    document.getElementById('appContent').innerHTML = `
+      <div class="error-msg">
+        Lỗi: ${err.message}<br><br>
+        <small style="color:#555">Kiểm tra URL Sheet và quyền "Publish to web"</small>
+      </div>`;
+    console.error(err);
+  }
+}
+
+loadSheet();
+</script>
 </body>
 </html>
